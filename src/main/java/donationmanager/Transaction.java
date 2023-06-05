@@ -1,11 +1,13 @@
 package donationmanager;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
 @RequiredArgsConstructor
+@Getter
 public class Transaction {
     @NonNull
     private String name;
@@ -22,5 +24,5 @@ public class Transaction {
     @NonNull
     private List<String> miscText;
 
-    private String donationCategory;
+    private String donationCategory = "";
 }

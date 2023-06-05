@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@SuppressWarnings("rawtypes")
 public class BankStatementReader {
     public static List<List<RectangularTextContainer>> extractTable() throws IOException {
 
@@ -46,37 +47,29 @@ public class BankStatementReader {
         float right = 556.14f;
 
         List<Float> columnPositions = Arrays.asList(110.45f, 307.84f, 346.77f, 419.51f, 480.49f);
-        Table table =
-                extractionAlgorithm.extract(page.getArea(top, left, bottom, right),
-                                            columnPositions).get(0);
-        return table;
+        return extractionAlgorithm.extract(page.getArea(top, left, bottom, right),
+                                           columnPositions).get(0);
     }
 
+    @SuppressWarnings("unused")
     public static void printTable(Table table) {
         List<List<RectangularTextContainer>> rows = table.getRows();
 
-        for (int i = 0; i < rows.size(); i++) {
-
-            List<RectangularTextContainer> cells = rows.get(i);
-
-            for (int j = 0; j < cells.size(); j++) {
-                System.out.print(cells.get(j).getText() + "|");
+        for (List<RectangularTextContainer> cells : rows) {
+            for (RectangularTextContainer cell : cells) {
+                System.out.print(cell.getText() + "|");
             }
-
             System.out.println();
         }
         System.out.println("--------------");
     }
 
+    @SuppressWarnings("unused")
     public static void printTable(List<List<RectangularTextContainer>> table) {
-        for (int i = 0; i < table.size(); i++) {
-
-            List<RectangularTextContainer> cells = table.get(i);
-
-            for (int j = 0; j < cells.size(); j++) {
-                System.out.print(cells.get(j).getText() + "|");
+        for (List<RectangularTextContainer> cells : table) {
+            for (RectangularTextContainer cell : cells) {
+                System.out.print(cell.getText() + "|");
             }
-
             System.out.println();
         }
         System.out.println("--------------");
@@ -86,11 +79,6 @@ public class BankStatementReader {
                                           Table partialTable) {
         List<List<RectangularTextContainer>> rows = partialTable.getRows();
 
-        for (int i = 0; i < rows.size(); i++) {
-
-            List<RectangularTextContainer> cells = rows.get(i);
-
-            table.add(cells);
-        }
+        table.addAll(rows);
     }
 }
