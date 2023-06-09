@@ -3,6 +3,15 @@
 # Learn more about .gitignore:
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
 
+settings/
+
+*.xlsx
+*.xlsm
+*.xlsb
+*.xls
+
+*.pdf
+
 # Node artifact files
 node_modules/
 dist/
@@ -21,7 +30,6 @@ dist/
 
 # Maven
 target/
-dist/
 
 # JetBrains IDE
 .idea/

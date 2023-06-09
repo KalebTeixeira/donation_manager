@@ -24,5 +24,5 @@ public class Transaction {
     @NonNull
     private List<String> miscText;
 
-    private String donationCategory = "";
+    private final String donationCategory = "";
 }
