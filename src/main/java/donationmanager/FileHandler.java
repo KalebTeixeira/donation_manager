@@ -3,50 +3,53 @@ package donationmanager;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
 
 public class FileHandler {
-    private final JFileChooser fileChooser = new JFileChooser("..");
+    private final JFileChooser fileChooser = new JFileChooser(".");
 
     /**
-     * @return
-     * @throws IOException
+     * Uses a file chooser dialogue to open a specific file.
+     *
+     * @param title  The title of the file chooser dialogue.
+     * @param filter The extension filter to be used.
+     * @return The opened file.
+     * @throws RuntimeException If the dialogue is closed by the user.
      */
-    public File openFile() throws IOException {
-        configureFileChooser("Choose the file with all donors",
-                             "Excel files",
-                             "xlsx",
-                             "xlsm",
-                             "xlsb",
-                             "xls");
+    public File chooseFileToOpen(String title, FileFilter filter) {
+        configureFileChooser(title, filter);
 
         if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             return fileChooser.getSelectedFile();
         }
 
-        throw new IOException("No file chosen");
+        throw new RuntimeException("No file chosen");
     }
 
-    public File saveFile() throws IOException {
-        configureFileChooser("Choose Where to save the output",
-                             "Excel files",
-                             "xlsx",
-                             "xlsm",
-                             "xlsb",
-                             "xls");
+    /**
+     * Uses a file chooser dialogue to save a file.
+     *
+     * @param title  The title of the file chooser dialogue.
+     * @param filter The extension filter to be used.
+     * @return The file to be saved.
+     * @throws RuntimeException If the dialogue is closed by the user.
+     */
 
+    public File chooseFileToSave(String title, FileFilter filter) throws RuntimeException {
+        configureFileChooser(title, filter);
         if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
             return fileChooser.getSelectedFile();
         }
-        throw new IOException("No file chosen");
+        throw new RuntimeException("No file chosen");
     }
 
-    private void configureFileChooser(String title, String... filter) {
+    /**
+     * Configures the file chooser with the given parameters.
+     *
+     * @param title  The title of the file chooser dialogue.
+     * @param filter The extension filter to be used.
+     */
+    private void configureFileChooser(String title, FileFilter filter) {
         fileChooser.setDialogTitle(title);
-
-        String filterDescription = filter[0];
-        String[] filterExtensions = Arrays.stream(filter, 1, filter.length).toArray(String[]::new);
-        fileChooser.setFileFilter(new FileNameExtensionFilter(filterDescription, filterExtensions));
+        fileChooser.setFileFilter(new FileNameExtensionFilter(filter.description, filter.extensions));
     }
 }

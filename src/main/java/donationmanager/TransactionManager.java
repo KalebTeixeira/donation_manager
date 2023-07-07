@@ -33,8 +33,7 @@ public class TransactionManager {
 
             String dateOnNextRow = getDateOnNextRow(rowNumber);
 
-            if ((text.equals("Postcheckeingang") || text.equals("Belast. E-Banking")) &&
-                dateOnNextRow.isBlank()) {
+            if ((text.equals("Postcheckeingang") || text.equals("Belast. E-Banking")) && dateOnNextRow.isBlank()) {
                 handleGroupedEntry(rowNumber);
             }
 
@@ -48,8 +47,7 @@ public class TransactionManager {
 
 
     /**
-     * This method is used for entries in the bank statement that have multiple transactions grouped
-     * together.
+     * This method is used for entries in the bank statement that have multiple transactions grouped together.
      *
      * @param startingRowNumber The row number where the grouped entry starts
      */
@@ -74,31 +72,30 @@ public class TransactionManager {
     }
 
     /**
-     * Checks if the grouped entry can be handled by this program. Check the text fields in the
-     * entries for currency amount patterns and sees if they, added together match the total. If
-     * not, this method returns false, the program skips this entry and the user has to manually add
-     * it instead.
+     * Checks if the grouped entry can be handled by this program. Check the text fields in the entries for currency
+     * amount patterns and sees if they, added together match the total. If not, this method returns false, the program
+     * skips this entry and the user has to manually add it instead.
      *
      * @param startingRowNumber The row number where the grouped entry starts
      * @return A boolean saying if the program can handle this grouped entry
      * @throws RuntimeException if no total donated amount is found
      */
     private boolean canHandleGroupedEntry(int startingRowNumber) {
-        int totalAmount;
+        double totalAmount;
         List<RectangularTextContainer> startingRow = this.table.get(startingRowNumber);
         String debitField = startingRow.get(3).getText();
         String creditField = startingRow.get(4).getText();
         if (!debitField.isBlank()) {
-            totalAmount = Integer.parseInt(debitField);
+            totalAmount = Double.parseDouble(debitField.replaceAll("'", ""));
         }
         else if (!creditField.isBlank()) {
-            totalAmount = Integer.parseInt(creditField);
+            totalAmount = Double.parseDouble(creditField.replaceAll("'", ""));
         }
         else {
             throw new RuntimeException("No total amount was found in grouped entry.");
         }
 
-        int checkTotal = 0;
+        double checkTotal = 0;
         for (int rowNumber = startingRowNumber + 1; rowNumber < this.table.size(); rowNumber++) {
 
             String dateOnNextRow = getDateOnNextRow(rowNumber);
@@ -107,7 +104,9 @@ public class TransactionManager {
             }
 
             String text = this.table.get(rowNumber).get(1).getText();
-            int amount = Integer.parseInt(extractAmountFromText(text));
+            double amount =
+                    !extractAmountFromText(text).isBlank() ? Double.parseDouble(extractAmountFromText(text)) : 0;
+
             checkTotal += amount;
         }
 
@@ -115,9 +114,9 @@ public class TransactionManager {
     }
 
     /**
-     * Checks if the current row is the start of a new transaction in a grouped entry. It does this
-     * by looking if the text field contains a currency amount pattern. (Because in grouped entries,
-     * the amount donated is included in the text field instead of being separate.)
+     * Checks if the current row is the start of a new transaction in a grouped entry. It does this by looking if the
+     * text field contains a currency amount pattern. (Because in grouped entries, the amount donated is included in the
+     * text field instead of being separate.)
      *
      * @param text The String in the text field
      * @return a boolean saying if the current row is the start of a new transaction or not
@@ -129,8 +128,8 @@ public class TransactionManager {
     /**
      * Extracts a transaction from the table.
      *
-     * @param entryType The type of entry the transaction is being extracted from. Can be either a
-     *                  regular, SINGLE entry, or a GROUPED entry.
+     * @param entryType The type of entry the transaction is being extracted from. Can be either a regular, SINGLE
+     *                  entry, or a GROUPED entry.
      * @param rowNumber The starting row of the entry to extract from.
      * @return A new Transaction containing all of its extracted information
      */
@@ -177,16 +176,15 @@ public class TransactionManager {
         }
         List<RectangularTextContainer> row = this.table.get(rowNumber);
         RectangularTextContainer nameField = row.get(1);
-        throw new RuntimeException(String.format(
-                "No starting row was found at the grouped entry with: %s",
-                nameField.getText()));
+        throw new RuntimeException(String.format("No starting row was found at the grouped entry with: %s",
+                                                 nameField.getText()));
     }
 
     /**
      * Extracts the donated amount of the current entry from the table.
      *
-     * @param entryType The type of the entry the transaction is being extracted from. Can be either
-     *                  a regular, SINGLE entry, or a GROUPED entry.
+     * @param entryType The type of the entry the transaction is being extracted from. Can be either a regular, SINGLE
+     *                  entry, or a GROUPED entry.
      * @param rowNumber The row number of the current entry.
      * @return The extracted amount
      */
@@ -200,8 +198,8 @@ public class TransactionManager {
                 result = extractGroupedEntryAmount(rowNumber);
                 break;
             default:
-                throw new RuntimeException(String.format("No valid entry type for: %s", table.get(
-                        rowNumber).get(1).getText()));
+                throw new RuntimeException(String.format("No valid entry type for: %s",
+                                                         table.get(rowNumber).get(1).getText()));
         }
         return result.replaceAll("'", "");
     }
@@ -248,10 +246,9 @@ public class TransactionManager {
         String amount = extractAmountFromText(nameField.getText()).trim();
 
         if (amount.isBlank()) {
-            throw new RuntimeException(String.format(
-                    "No amount was found for Transaction: %s on " + "%s",
-                    nameField.getText(),
-                    dateField.getText()));
+            throw new RuntimeException(String.format("No amount was found for Transaction: %s on " + "%s",
+                                                     nameField.getText(),
+                                                     dateField.getText()));
         }
 
         return amount;
@@ -260,8 +257,8 @@ public class TransactionManager {
     /**
      * Extracts the extra text provided besides the name the table.
      *
-     * @param entryType The type of the entry the transaction is being extracted from. Can be either
-     *                  a regular, SINGLE entry, or a GROUPED entry.
+     * @param entryType The type of the entry the transaction is being extracted from. Can be either a regular, SINGLE
+     *                  entry, or a GROUPED entry.
      * @param rowNumber The row number of the current entry.
      * @return The extracted text.
      */
@@ -278,8 +275,7 @@ public class TransactionManager {
                 continueCondition = dateField.getText().isBlank();
             }
             else if (entryType == EntryType.GROUPED) {
-                continueCondition = dateField.getText().isBlank() && !isRowStartOfNewTransaction(
-                        textField.getText());
+                continueCondition = dateField.getText().isBlank() && !isRowStartOfNewTransaction(textField.getText());
             }
 
             if (!continueCondition) {
@@ -296,7 +292,6 @@ public class TransactionManager {
      *
      * @param rowNumber The row number of the current entry.
      * @return The transaction Type. Can be DEBIT or CREDIT.
-     * @throws RuntimeException
      */
     private TransactionType extractTransactionType(int rowNumber) {
         List<RectangularTextContainer> row = this.table.get(rowNumber);
@@ -312,10 +307,9 @@ public class TransactionManager {
             return TransactionType.CREDIT;
         }
         else {
-            throw new RuntimeException(String.format(
-                    "No transaction type was found for: %s on " + "%s",
-                    nameField.getText(),
-                    dateField.getText()));
+            throw new RuntimeException(String.format("No transaction type was found for: %s on " + "%s",
+                                                     nameField.getText(),
+                                                     dateField.getText()));
         }
     }
 
@@ -323,8 +317,7 @@ public class TransactionManager {
      * Get the contents of the Date field in the next row.
      *
      * @param rowNumber The row number of the current entry.
-     * @return The contents of the Date field in the next row. Empty if the current row is the last
-     * row.
+     * @return The contents of the Date field in the next row. Empty if the current row is the last row.
      */
     private String getDateOnNextRow(int rowNumber) {
         // If it's the last row
@@ -335,12 +328,10 @@ public class TransactionManager {
     }
 
     /**
-     * Uses regex to extract a currency amount from a string. The amount can have the format
-     * (1'111.11)
+     * Uses regex to extract a currency amount from a string. The amount can have the format (1'111.11)
      *
      * @param text The String to be searched for a currency amount.
-     * @return The amount, if any is found, stripped of the digit group separator (') to prevent
-     * further issues.
+     * @return The amount, if any is found, stripped of the digit group separator (') to prevent further issues.
      */
     private String extractAmountFromText(String text) {
         Pattern pattern = Pattern.compile("(^|\\s)(\\d|')+\\.\\d\\d($|\\s)");
