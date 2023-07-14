@@ -5,7 +5,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 
 public class FileHandler {
-    private final JFileChooser fileChooser = new JFileChooser(".");
+    private final JFileChooser fileChooser = new JFileChooser();
 
     /**
      * Uses a file chooser dialogue to open a specific file.
@@ -36,6 +36,7 @@ public class FileHandler {
 
     public File chooseFileToSave(String title, FileFilter filter) throws RuntimeException {
         configureFileChooser(title, filter);
+
         if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
             return fileChooser.getSelectedFile();
         }

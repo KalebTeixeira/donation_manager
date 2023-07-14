@@ -20,10 +20,16 @@ public class DonationListMaker {
     private final File outputFile;
     private final Workbook outputExcel = new XSSFWorkbook();
     private final Sheet outputSheet;
+    private final DialogueBox dialogueBox;
 
-    public DonationListMaker(File allDonorsFile, List<Transaction> transactions, File outputFile) {
+    public DonationListMaker(File allDonorsFile,
+                             List<Transaction> transactions,
+                             File outputFile,
+                             DialogueBox dialogueBox) {
+
         this.transactions = transactions;
         this.outputFile = outputFile;
+        this.dialogueBox = dialogueBox;
 
         // Check if all donors file is an Excel file
         Workbook allDonorsExcel;
@@ -41,10 +47,8 @@ public class DonationListMaker {
         Cell firstCell;
 
         // Validate all donors file
-        if (firstRow == null ||
-            (firstCell = firstRow.getCell(0)) == null ||
-            firstCell.getCellType() != CellType.STRING ||
-            !firstCell.getStringCellValue().equals("Code /")) {
+        if (firstRow == null || (firstCell = firstRow.getCell(0)) == null ||
+            firstCell.getCellType() != CellType.STRING || !firstCell.getStringCellValue().equals("Code /")) {
 
             throw new IllegalArgumentException("The Excel file with all known donors is not valid");
         }
@@ -75,7 +79,7 @@ public class DonationListMaker {
                 continue;
             }
 
-            Optional<Integer> matchRow = findNameMatch(transaction.getName(), allDonorsSheet);
+            Optional<Integer> matchRow = findNameMatch(transaction, allDonorsSheet);
             if (matchRow.isPresent()) {
                 insertRow(allDonorsSheet, outputSheet, matchRow.get(), i + 1);
                 replaceAmount(outputSheet.getRow(i + 1), transaction.getAmount(), transaction.getTransactionType());
@@ -91,32 +95,43 @@ public class DonationListMaker {
      * Compares a given name with the list of all donors and attempts to find the best match if any. Can find a perfect
      * match (identical strings), or can ask the user for confirmation if the fuzzy matcher natches above 70%.
      *
-     * @param name           The current name to be compared with the list of all known donors.
+     * @param transaction    The current transaction to be compared with the list of all known donors.
      * @param allDonorsSheet The list of all known donors.
      * @return An optional integer containing the row on the list of all known donors with the best match. Empty if no
      * good match is found.
      */
-    private static Optional<Integer> findNameMatch(String name, Sheet allDonorsSheet) {
+    private Optional<Integer> findNameMatch(Transaction transaction, Sheet allDonorsSheet) {
+        String name = transaction.getName();
+
+        Optional<Integer> result = Optional.empty();
         // The first element of this list is the match score (101 for perfect match).
         // The rest are row indexes of the matches.
-        Optional<Integer> result = Optional.empty();
         List<Integer> highestMatchList = findHighestMatchList(name, allDonorsSheet);
         int highestScore = highestMatchList.get(0);
 
         boolean perfectMatch = highestScore == 101;
         if (perfectMatch) {
             if (highestMatchList.size() > 2) {
-                handleMultipleMatches(highestMatchList);
+                result = Optional.of(handleMultipleMatches(highestMatchList, transaction.getAmount()));
             }
             // get(1) because the highest score is in index 0. Actual row numbers start at
             // index 1.
-            result = Optional.of(highestMatchList.get(1));
+            else {
+                result = Optional.of(highestMatchList.get(1));
+            }
         }
 
-        if (highestScore > 70) {
-            result = Optional.of(showNameComparisonDialogue(allDonorsSheet,
-                                                            name,
-                                                            highestMatchList));
+        else if (highestScore > 70) {
+            for (int i = 1; i < highestMatchList.size(); i++) {
+                int matchedRow = highestMatchList.get(i);
+                String matchedName = allDonorsSheet.getRow(matchedRow).getCell(3).getStringCellValue();
+
+                int response = this.dialogueBox.showNameComparisonDialogue(name, matchedName);
+
+                if (response == JOptionPane.YES_OPTION) {
+                    return Optional.of(matchedRow);
+                }
+            }
         }
 
         return result;
@@ -131,21 +146,23 @@ public class DonationListMaker {
      * @return A list of Integers. The first item is the best score found. The next items and the indices of the rows of
      * the best matched names on the list of all known donors.
      */
-    private static List<Integer> findHighestMatchList(String currentDonorName, Sheet allKnownDonorsList) {
+    private List<Integer> findHighestMatchList(String currentDonorName, Sheet allKnownDonorsList) {
         int highestScore = 0;
         List<Integer> matchedRows = new ArrayList<>();
 
         for (int i = 1; i < allKnownDonorsList.getLastRowNum(); i++) {
             Row row = allKnownDonorsList.getRow(i);
+
             if (row == null) {
                 continue;
             }
-
             Cell nameCell = row.getCell(3);
             if (nameCell == null) {
                 continue;
             }
+
             String knownDonorsName = nameCell.getStringCellValue().trim();
+            currentDonorName = currentDonorName.trim();
 
             int score;
             if (currentDonorName.equals(knownDonorsName)) {
@@ -154,6 +171,9 @@ public class DonationListMaker {
             }
             else {
                 score = (FuzzySearch.tokenSortRatio(currentDonorName, knownDonorsName));
+                if (score > 90) {
+                    continue;
+                }
             }
 
             if (score == highestScore) {
@@ -170,50 +190,23 @@ public class DonationListMaker {
     }
 
     /**
-     * If two matches are found with the exact same score, for example two known donors with perfect matches, this
-     * method warns the user about this, then just picks the first match.
+     * If multiple matches are found for a given name, this method looks for the best match by comparing the donation
+     * amounts. If none are found with the same amount, the method just returns the index if the first match.
      *
-     * @param highestMatchScoreList List of rows with the highest match scores.
+     * @param highestMatchScoreList List of rows with the highest match scores
+     * @return The match where the donated amount is the same or the first index in the match list if none are found
      */
-    private static void handleMultipleMatches(List<Integer> highestMatchScoreList) {
-        StringBuilder message = new StringBuilder("Multiple matches were found: Rows ");
-
+    private int handleMultipleMatches(List<Integer> highestMatchScoreList, String donatedAmount) {
         for (int i = 1; i < highestMatchScoreList.size(); i++) {
-            if (i != 1) {
-                message.append(",");
-            }
-            int physicalRowNumber = highestMatchScoreList.get(i) + 1;
-            message.append(" ").append(physicalRowNumber);
-        }
-        message.append(". Using first match.");
-
-        JOptionPane.showMessageDialog(null, message.toString(), "Multiple matches", JOptionPane.WARNING_MESSAGE);
-    }
-
-    /**
-     * When the fuzzy matcher finds a match above 70% similarity, this method asks the user for confirmation that both
-     * name are the same using a simple dialogue box.
-     *
-     * @param allDonorsSheet   The Excel list of all known donors.
-     * @param name             The current donor name being compared.
-     * @param highestMatchList List of rows with the highest match scores.
-     * @return returns the row number of the matching name if the user confirms equality. Returns -1 if the user denies
-     * any possible matches.
-     */
-    private static int showNameComparisonDialogue(Sheet allDonorsSheet, String name, List<Integer> highestMatchList) {
-
-        for (int i = 1; i < highestMatchList.size(); i++) {
-            int matchedRow = highestMatchList.get(i);
-            String matchedName = allDonorsSheet.getRow(matchedRow).getCell(3).getStringCellValue();
-
-            String message = String.format("Is %s = %s?", name, matchedName);
-            int response = JOptionPane.showConfirmDialog(null, message, "", JOptionPane.YES_NO_OPTION);
-
-            if (response == JOptionPane.YES_OPTION) {
-                return matchedRow;
+            int rowIndex = highestMatchScoreList.get(i);
+            Row row = this.allDonorsSheet.getRow(rowIndex);
+            double savedAmount = row.getCell(6).getNumericCellValue();
+            if (donatedAmount.equals(String.valueOf(savedAmount))) {
+                return rowIndex;
             }
         }
-        return -1;
+        // Return the first index if no match is found with the same amount
+        return highestMatchScoreList.get(1);
     }
 
     /**
@@ -224,7 +217,7 @@ public class DonationListMaker {
      * @param matchRowNumber  The number of the row to be copied.
      * @param outputRowNumber The number of the row to be copies into.
      */
-    private static void insertRow(Sheet allDonorsSheet, Sheet outputSheet, int matchRowNumber, int outputRowNumber) {
+    private void insertRow(Sheet allDonorsSheet, Sheet outputSheet, int matchRowNumber, int outputRowNumber) {
 
         Row matchRow = allDonorsSheet.getRow(matchRowNumber);
         Row outputRow = outputSheet.createRow(outputRowNumber);
@@ -256,7 +249,7 @@ public class DonationListMaker {
      * @param amount          The actual amount in the transaction
      * @param transactionType The type of transaction: CREDIT or DEBIT
      */
-    private static void replaceAmount(Row outputRow, String amount, TransactionType transactionType) {
+    private void replaceAmount(Row outputRow, String amount, TransactionType transactionType) {
         switch (transactionType) {
             case CREDIT:
                 Cell creditCell = outputRow.getCell(6);

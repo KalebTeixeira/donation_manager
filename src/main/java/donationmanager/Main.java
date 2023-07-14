@@ -23,7 +23,10 @@ public class Main {
 
         File allDonorsExcel = fileHandler.chooseFileToOpen("Choose the file with all known donors", FileFilter.EXCEL);
         File outputExcel = fileHandler.chooseFileToSave("Choose Where to save the output", FileFilter.EXCEL);
-        DonationListMaker donationListMaker = new DonationListMaker(allDonorsExcel, transactions, outputExcel);
+        DonationListMaker donationListMaker = new DonationListMaker(allDonorsExcel,
+                                                                    transactions,
+                                                                    outputExcel,
+                                                                    new DialogueBox());
 
         donationListMaker.makeDonationList();
     }

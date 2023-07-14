@@ -12,16 +12,18 @@ import static org.junit.jupiter.api.Assertions.*;
 public class BankStatementReaderTests {
     @Test
     public void test_extract_table_from_bank_statement() throws IOException {
-        File bankStatement = new File("test-bank-statement.pdf");
+        // given
+        File bankStatement = new File("test-files/test-bank-statement.pdf");
         BankStatementReader bankStatementReader = new BankStatementReader(bankStatement);
 
+        // when
         List<List<RectangularTextContainer>> table = bankStatementReader.extractTable();
 
+        // then
         final int tableSizeExpected = 726;
         final int rowSizeExpected = 5;
         final String firstRowExpected = "03.04.23";
         final String lastRowExpected = "PATENSCHAFT AETHIOPIEN";
-
 
         assertEquals(tableSizeExpected, table.size());
         assertEquals(rowSizeExpected, table.get(0).size());
@@ -32,9 +34,11 @@ public class BankStatementReaderTests {
 
     @Test
     public void test_wrong_bank_statement_file_format() {
-        File file = new File("test.png");
-
+        // given
+        File file = new File("test-files/test.png");
         BankStatementReader bankStatementReader = new BankStatementReader(file);
+
+        // when then
         Exception exception = assertThrows(IOException.class, bankStatementReader::extractTable);
 
         String messageExpected = "Error: End-of-File, expected line";
@@ -46,9 +50,11 @@ public class BankStatementReaderTests {
 
     @Test
     public void test_inexistent_bank_statement() {
+        // given
         File file = new File("IDontExist.pdf");
-
         BankStatementReader bankStatementReader = new BankStatementReader(file);
+
+        // when then
         Exception exception = assertThrows(IOException.class, bankStatementReader::extractTable);
 
         String messageExpected = "The system cannot find the file specified";
@@ -58,12 +64,14 @@ public class BankStatementReaderTests {
 
     @Test
     public void test_incorrect_bank_statement() {
-        File file = new File("test.pdf");
-
+        // given
+        File file = new File("test-files/test.pdf");
         BankStatementReader bankStatementReader = new BankStatementReader(file);
+
+        // when then
         Exception exception = assertThrows(IllegalArgumentException.class, bankStatementReader::extractTable);
 
-        String messageExpected = "The file is not a valid bank statement";
+        String messageExpected = "The selected file is not a valid bank statement";
 
         assertTrue(exception.getMessage().contains(messageExpected));
     }

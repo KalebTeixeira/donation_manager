@@ -5,6 +5,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -12,12 +13,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 public class DonationListMakerTests {
+    public DialogueBox dialogueBox = new DialogueBox();
+
     @Test
     public void test_output_correct_donation_list() throws IOException {
-        File allDonorsFile = new File("all-donors-test.xlsx");
-        File outputFile = new File("output-test.xlsx");
+        // given
+        File allDonorsFile = new File("test-files/all-donors-test.xlsx");
+        File outputFile = new File("test-files/output-test.xlsx");
 
         String transaction1Name = "Gilbert und Liselotte Aebischer-Pfander";
         String transaction1Amount = "10";
@@ -64,10 +71,18 @@ public class DonationListMakerTests {
                                                                  transaction4Date,
                                                                  transaction4Text));
 
-        DonationListMaker donationListMaker = new DonationListMaker(allDonorsFile, transactions, outputFile);
+        DialogueBox dialogueBox = spy(new DialogueBox());
+        DonationListMaker donationListMaker = new DonationListMaker(allDonorsFile,
+                                                                    transactions,
+                                                                    outputFile,
+                                                                    dialogueBox);
 
+        doReturn(JOptionPane.YES_OPTION).when(dialogueBox).showNameComparisonDialogue(any(), any());
+
+        // when
         donationListMaker.makeDonationList();
 
+        // then
         XSSFSheet outputSheet = new XSSFWorkbook(new FileInputStream(outputFile)).getSheetAt(0);
 
         // Check if header is present
@@ -93,36 +108,51 @@ public class DonationListMakerTests {
 
     @Test
     public void test_incorrect_donors_file_format() {
-        File allDonorsFile = new File("test.txt");
-        File outputFile = new File("output-test.xlsx");
+        // given
+        File allDonorsFile = new File("test-files/test.txt");
+        File outputFile = new File("test-files/output-test.xlsx");
         List<Transaction> transactions = new ArrayList<>();
 
+        // when then
         Exception exception = assertThrows(IllegalArgumentException.class,
-                                           () -> new DonationListMaker(allDonorsFile, transactions, outputFile));
+                                           () -> new DonationListMaker(allDonorsFile,
+                                                                       transactions,
+                                                                       outputFile,
+                                                                       dialogueBox));
         assertEquals("No valid entries or contents found, this is not a valid OOXML (Office Open XML) file",
                      exception.getMessage());
     }
 
     @Test
     void test_incorrect_donors_excel_file() {
-        File allDonorsFile = new File("test.xlsx");
-        File outputFile = new File("output-test.xlsx");
+        // given
+        File allDonorsFile = new File("test-files/test.xlsx");
+        File outputFile = new File("test-files/output-test.xlsx");
         List<Transaction> transactions = new ArrayList<>();
 
+        // when then
         Exception exception = assertThrows(IllegalArgumentException.class,
-                                           () -> new DonationListMaker(allDonorsFile, transactions, outputFile));
+                                           () -> new DonationListMaker(allDonorsFile,
+                                                                       transactions,
+                                                                       outputFile,
+                                                                       dialogueBox));
         assertEquals("The Excel file with all known donors is not valid", exception.getMessage());
     }
 
     @Test
     void test_incorrect_output_file_format() {
-        File allDonorsFile = new File("all-donors-test.xlsx");
-        File outputFile = new File("output-test.txt");
+        // given
+        File allDonorsFile = new File("test-files/all-donors-test.xlsx");
+        File outputFile = new File("test-files/output-test.txt");
         List<Transaction> transactions = new ArrayList<>();
 
 
+        // when then
         Exception exception = assertThrows(IllegalArgumentException.class,
-                                           () -> new DonationListMaker(allDonorsFile, transactions, outputFile));
+                                           () -> new DonationListMaker(allDonorsFile,
+                                                                       transactions,
+                                                                       outputFile,
+                                                                       dialogueBox));
         assertEquals("The output file does not have the correct file format (must be an Excel file)",
                      exception.getMessage());
     }

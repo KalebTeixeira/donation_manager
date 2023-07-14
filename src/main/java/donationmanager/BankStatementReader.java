@@ -60,7 +60,7 @@ public class BankStatementReader {
      * @param extractionAlgorithm Tabula class used to extract tables
      * @return A 2D list of RectangularTextContainers
      */
-    private static List<List<RectangularTextContainer>> extractTableFromPage(int pageNumber,
+    private List<List<RectangularTextContainer>> extractTableFromPage(int pageNumber,
                                                                              int lastPageNumber,
                                                                              ObjectExtractor extractor,
                                                                              BasicExtractionAlgorithm extractionAlgorithm) {
@@ -83,7 +83,7 @@ public class BankStatementReader {
      * @param table The table to be printed, in a 2D list of Tabula RectangularTextContainer format
      */
     @SuppressWarnings("unused")
-    public static void printTable(Table table) {
+    public void printTable(Table table) {
         List<List<RectangularTextContainer>> rows = table.getRows();
 
         for (List<RectangularTextContainer> cells : rows) {
@@ -101,7 +101,7 @@ public class BankStatementReader {
      * @param table The table to be printed, in a Tabula Table format
      */
     @SuppressWarnings("unused")
-    public static void printTable(List<List<RectangularTextContainer>> table) {
+    public void printTable(List<List<RectangularTextContainer>> table) {
         for (int i = 0; i < table.size(); i++) {
             List<RectangularTextContainer> cells = table.get(i);
             for (RectangularTextContainer cell : cells) {
@@ -118,7 +118,7 @@ public class BankStatementReader {
      * @param table The table to be trimmed
      * @return the trimmed table as a 2d list of RectangularTextContainers
      */
-    private static List<List<RectangularTextContainer>> trim(Table table) {
+    private List<List<RectangularTextContainer>> trim(Table table) {
         List<List<RectangularTextContainer>> iterableTable = table.getRows();
         for (int i = iterableTable.size() - 1; i >= 0; i--) {
             if (iterableTable.get(i).get(1).getText().contains("Saldo per")) {
