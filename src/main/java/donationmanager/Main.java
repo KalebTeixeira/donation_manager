@@ -13,9 +13,7 @@ public class Main {
         File bankStatement = fileHandler.chooseFileToOpen("Choose the bank statement PDF.", FileFilter.PDF);
         BankStatementReader bankStatementReader = new BankStatementReader(bankStatement);
 
-
         List<List<RectangularTextContainer>> extractedTable = bankStatementReader.extractTable();
-        //BankStatementReader.printTable(extractedTable);
 
         TransactionManager transactionManager = new TransactionManager(extractedTable);
 
